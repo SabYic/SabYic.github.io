@@ -73,6 +73,21 @@ Instruction class templates
 成段的load，store。
 以及向量和标量的结合计算啥的
 Combination of instruction classes.
+这里是一些指令子集啥的，比如VF，F就是两个不同的子集，同时根据不同的predict实例化不同子集
+tablegen
+```
+let Predicates = [HasVInstructions] in {
+def VLM_V : VUnitStrideLoadMask<"vlm.v">,
+             Sched<[WriteVLDM, ReadVLDX]>;
+def VSM_V : VUnitStrideStoreMask<"vsm.v">,
+             Sched<[WriteVSTM, ReadVSTM, ReadVSTX]>;
+def : InstAlias<"vle1.v $vd, (${rs1})",
+                (VLM_V VR:$vd, GPR:$rs1), 0>;
+def : InstAlias<"vse1.v $vs3, (${rs1})",
+                (VSM_V VR:$vs3, GPR:$rs1), 0>;
+
+```
+RISCVInstrInfoVPseudos.td
 ### RISCVRegisterInfo.td               
 ### VentusInstrFormatsV.td
 ### RISCVCallingConv.td 
