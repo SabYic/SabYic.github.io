@@ -80,7 +80,7 @@
     <article id="post-2020.5.21" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2025/05/29/2020.5.21/" class="article-date">
-  <time class="dt-published" datetime="2025-05-29T09:39:54.463Z" itemprop="datePublished">2025-05-29</time>
+  <time class="dt-published" datetime="2025-05-29T10:02:53.135Z" itemprop="datePublished">2025-05-29</time>
 </a>
     
   </div>
@@ -108,7 +108,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sabyic.github.io/2025/05/29/2020.5.21/" data-id="cmb96nv3c0000maq00s7j6qf8" data-title="2025-5-21-为什么官方LLVM会报错的思考" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://sabyic.github.io/2025/05/29/2020.5.21/" data-id="cmb97hf7r0000kuqb9ji0e86j" data-title="2025-5-21-为什么官方LLVM会报错的思考" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
@@ -123,7 +123,7 @@
     <article id="post-hello-world" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2025/05/29/hello-world/" class="article-date">
-  <time class="dt-published" datetime="2025-05-29T09:39:54.463Z" itemprop="datePublished">2025-05-29</time>
+  <time class="dt-published" datetime="2025-05-29T10:02:53.135Z" itemprop="datePublished">2025-05-29</time>
 </a>
     
   </div>
@@ -179,7 +179,52 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sabyic.github.io/2025/05/29/hello-world/" data-id="cmb96nv3h0002maq0a93g9b5b" data-title="ventus LLVM 初步 调研" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://sabyic.github.io/2025/05/29/hello-world/" data-id="cmb97hf7w0002kuqb13j877s6" data-title="ventus LLVM 初步 调研" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-report-fix" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2025/05/29/report-fix/" class="article-date">
+  <time class="dt-published" datetime="2025-05-29T10:02:53.135Z" itemprop="datePublished">2025-05-29</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2025/05/29/report-fix/">ventus LLVM 初步 调研 report-fix</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>Q:第一个细节是技术上要注意一下：ventus-llvm的llc调用命令要参考ventus-llvm的readme，加上<code>-mtriple=riscv32 -mcpu=ventus-gpgpu</code>；而官方llvm的llc调用命令则是加上<code>-mtriple=riscv32 -mattr=+v,+zvfh</code>。这样应该就能解决“承影的产生代码是x86MIR而不是RISC-V MIR”以及“官方llvm跑half.ll会报错”的问题，试一试。<br>A:加上-mtriple&#x3D;riscv32 -mcpu&#x3D;ventus-gpgpu确实产生了riscv的MIR 但是官方执行<code>/home/wjsun/LLVM/build/bin/llc -march=riscv32 -mattr=+v,+zvfh --debug-only=isel half.ll &amp;&gt; out.log</code>仍然报错</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/home/wjsun/LLVM/build/bin/llc: error: /home/wjsun/LLVM/build/bin/llc: half.ll:369:25: error: floating point constant invalid for type</span><br><span class="line">  %fneg = fmul half %b, 0xBFF3333340000000</span><br><span class="line">                        ^</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Q:<br>第二个细节是表达上要注意一下：要展示MIR的差异之处的话，可以直接把ventus-llvm和官方llvm在“&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; Instruction selection ends:”之后的结果摆在一起，这样再得出“MIR加的指令的表示方式不同”的结论，这样会更加顺畅；而要展示发现有报错时，在贴报错信息的时候可以同步贴上执行命令，方便后续复现。<br>A：已修改()<br>Q:</p>
+<ol>
+<li>对于float.ll的测试，这里的差别确实是MIR加的指令的表示方式不同，不过更具体来说，是官方llvm会产生标量加指令FADD_S，而ventus-llvm却会出现向量加指令VFADD_VV。是的，同样的代码，官方会得到标量MIR，承影却会得到向量MIR，这是一个重点。<br>A:是的！完全是这样的。<br>Q:由于官方llvm对于float.ll和half.ll都只生成标量代码，如果把“-mattr&#x3D;+v,+zvfh”换成“-mattr&#x3D;+zfh”，可以看到最终结果跟“支持标量half”文档里官方llvm的结果应该是相似的。<br>执行&#x2F;home&#x2F;wjsun&#x2F;LLVM&#x2F;build&#x2F;bin&#x2F;llc -march&#x3D;riscv32 -mattr&#x3D;+zfh –debug-only&#x3D;isel half.ll &amp;&gt; out.log</li>
+</ol>
+<p>仍然报错</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/home/wjsun/LLVM/build/bin/llc: error: /home/wjsun/LLVM/build/bin/llc: half.ll:369:25: error: floating point constant invalid for type</span><br><span class="line">  %fneg = fmul half %b, 0xBFF3333340000000</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://sabyic.github.io/2025/05/29/report-fix/" data-id="cmb97hf7x0003kuqbbxx2gk55" data-title="ventus LLVM 初步 调研 report-fix" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
@@ -194,7 +239,7 @@
     <article id="post-readtarget" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2025/05/29/readtarget/" class="article-date">
-  <time class="dt-published" datetime="2025-05-29T09:39:54.463Z" itemprop="datePublished">2025-05-29</time>
+  <time class="dt-published" datetime="2025-05-29T10:02:53.135Z" itemprop="datePublished">2025-05-29</time>
 </a>
     
   </div>
@@ -240,20 +285,9 @@
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">   def : Pat&lt;(add GPR:$rs1, GPR:$rs2), (ADD $rs1, $rs2)&gt;;</span><br><span class="line">这段表示：当看到 DAG 中的 add 节点，其操作数来自寄存器时，用目标机器指令 ADD 替换。</span><br><span class="line"></span><br><span class="line">使用 Operand 规则解析寄存器、立即数、内存操作数等：</span><br><span class="line"></span><br><span class="line">tablegen</span><br></pre></td></tr></table></figure></li>
 </ol>
 <p>def simm5 : Operand<XLenVT>, ImmLeaf&lt;XLenVT, [{ return isInt&lt;5&gt;(Imm); }]&gt;;</p>
-<pre><code>
-3. 它告诉编译器，某个操作数是一个 5 位有符号立即数，编码时要验证这个约束。
-
-4. 生成机器指令（MachineInstr）：
-DAG 经过 ISelDAGToDAG 的匹配和替换后，会转为 MachineInstr，并使用 Operand 信息生成二进制编码。
-
-Scheduling definitions.
-这一部分是干嘛
-Instruction class templates
-比如：
-// strided segment load vd, (rs1), rs2, vm
-成段的load，store。
-以及向量和标量的结合计算啥的
-Combination of instruction classes.
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">3. 它告诉编译器，某个操作数是一个 5 位有符号立即数，编码时要验证这个约束。</span><br><span class="line"></span><br><span class="line">4. 生成机器指令（MachineInstr）：</span><br><span class="line">DAG 经过 ISelDAGToDAG 的匹配和替换后，会转为 MachineInstr，并使用 Operand 信息生成二进制编码。</span><br><span class="line"></span><br><span class="line">Scheduling definitions.</span><br><span class="line">这一部分是干嘛</span><br><span class="line">Instruction class templates</span><br><span class="line">比如：</span><br><span class="line">// strided segment load vd, (rs1), rs2, vm</span><br><span class="line">成段的load，store。</span><br><span class="line">以及向量和标量的结合计算啥的</span><br><span class="line">Combination of instruction classes.</span><br><span class="line">这里是一些指令子集啥的，比如VF，F就是两个不同的子集，同时根据不同的predict实例化不同子集</span><br><span class="line">tablegen</span><br></pre></td></tr></table></figure>
+<p>let Predicates &#x3D; [HasVInstructions] in {<br>def VLM_V : VUnitStrideLoadMask&lt;”vlm.v”&gt;,<br>             Sched&lt;[WriteVLDM, ReadVLDX]&gt;;<br>def VSM_V : VUnitStrideStoreMask&lt;”vsm.v”&gt;,<br>             Sched&lt;[WriteVSTM, ReadVSTM, ReadVSTX]&gt;;<br>def : InstAlias&lt;”vle1.v $vd, (${rs1})”,<br>                (VLM_V VR:$vd, GPR:$rs1), 0&gt;;<br>def : InstAlias&lt;”vse1.v $vs3, (${rs1})”,<br>                (VSM_V VR:$vs3, GPR:$rs1), 0&gt;;</p>
+<pre><code>RISCVInstrInfoVPseudos.td
 ### RISCVRegisterInfo.td               
 ### VentusInstrFormatsV.td
 ### RISCVCallingConv.td 
@@ -292,52 +326,7 @@ RISCVInstrInfoF.td
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sabyic.github.io/2025/05/29/readtarget/" data-id="cmb96nv3i0003maq053imgc8p" data-title="读target目录" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
-      
-      
-      
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-    <article id="post-report-fix" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2025/05/29/report-fix/" class="article-date">
-  <time class="dt-published" datetime="2025-05-29T09:39:54.463Z" itemprop="datePublished">2025-05-29</time>
-</a>
-    
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2025/05/29/report-fix/">ventus LLVM 初步 调研 report-fix</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <p>Q:第一个细节是技术上要注意一下：ventus-llvm的llc调用命令要参考ventus-llvm的readme，加上<code>-mtriple=riscv32 -mcpu=ventus-gpgpu</code>；而官方llvm的llc调用命令则是加上<code>-mtriple=riscv32 -mattr=+v,+zvfh</code>。这样应该就能解决“承影的产生代码是x86MIR而不是RISC-V MIR”以及“官方llvm跑half.ll会报错”的问题，试一试。<br>A:加上-mtriple&#x3D;riscv32 -mcpu&#x3D;ventus-gpgpu确实产生了riscv的MIR 但是官方执行<code>/home/wjsun/LLVM/build/bin/llc -march=riscv32 -mattr=+v,+zvfh --debug-only=isel half.ll &amp;&gt; out.log</code>仍然报错</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">/home/wjsun/LLVM/build/bin/llc: error: /home/wjsun/LLVM/build/bin/llc: half.ll:369:25: error: floating point constant invalid for type</span><br><span class="line">  %fneg = fmul half %b, 0xBFF3333340000000</span><br><span class="line">                        ^</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>Q:<br>第二个细节是表达上要注意一下：要展示MIR的差异之处的话，可以直接把ventus-llvm和官方llvm在“&#x3D;&#x3D;&#x3D;&#x3D;&#x3D; Instruction selection ends:”之后的结果摆在一起，这样再得出“MIR加的指令的表示方式不同”的结论，这样会更加顺畅；而要展示发现有报错时，在贴报错信息的时候可以同步贴上执行命令，方便后续复现。<br>A：已修改()<br>Q:</p>
-<ol>
-<li>对于float.ll的测试，这里的差别确实是MIR加的指令的表示方式不同，不过更具体来说，是官方llvm会产生标量加指令FADD_S，而ventus-llvm却会出现向量加指令VFADD_VV。是的，同样的代码，官方会得到标量MIR，承影却会得到向量MIR，这是一个重点。<br>A:是的！完全是这样的。<br>Q:由于官方llvm对于float.ll和half.ll都只生成标量代码，如果把“-mattr&#x3D;+v,+zvfh”换成“-mattr&#x3D;+zfh”，可以看到最终结果跟“支持标量half”文档里官方llvm的结果应该是相似的。<br>执行&#x2F;home&#x2F;wjsun&#x2F;LLVM&#x2F;build&#x2F;bin&#x2F;llc -march&#x3D;riscv32 -mattr&#x3D;+zfh –debug-only&#x3D;isel half.ll &amp;&gt; out.log</li>
-</ol>
-<p>仍然报错</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/home/wjsun/LLVM/build/bin/llc: error: /home/wjsun/LLVM/build/bin/llc: half.ll:369:25: error: floating point constant invalid for type</span><br><span class="line">  %fneg = fmul half %b, 0xBFF3333340000000</span><br></pre></td></tr></table></figure>
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="https://sabyic.github.io/2025/05/29/report-fix/" data-id="cmb96nv3j0004maq04he9dbdb" data-title="ventus LLVM 初步 调研 report-fix" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://sabyic.github.io/2025/05/29/readtarget/" data-id="cmb97hf7y0004kuqbfgef8fzw" data-title="读target目录" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
@@ -375,7 +364,7 @@ RISCVInstrInfoF.td
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sabyic.github.io/2025/05/19/first-post/" data-id="cmb96nv3f0001maq00q1q091l" data-title="first-post" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://sabyic.github.io/2025/05/19/first-post/" data-id="cmb97hf7u0001kuqbac48eeq6" data-title="first-post" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
@@ -426,11 +415,11 @@ RISCVInstrInfoF.td
           </li>
         
           <li>
-            <a href="/2025/05/29/readtarget/">读target目录</a>
+            <a href="/2025/05/29/report-fix/">ventus LLVM 初步 调研 report-fix</a>
           </li>
         
           <li>
-            <a href="/2025/05/29/report-fix/">ventus LLVM 初步 调研 report-fix</a>
+            <a href="/2025/05/29/readtarget/">读target目录</a>
           </li>
         
           <li>
