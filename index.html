@@ -126,21 +126,11 @@
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">   def : Pat&lt;(add GPR:$rs1, GPR:$rs2), (ADD $rs1, $rs2)&gt;;</span><br><span class="line">这段表示：当看到 DAG 中的 add 节点，其操作数来自寄存器时，用目标机器指令 ADD 替换。</span><br><span class="line"></span><br><span class="line">使用 Operand 规则解析寄存器、立即数、内存操作数等：</span><br><span class="line"></span><br><span class="line">tablegen</span><br></pre></td></tr></table></figure></li>
 </ol>
 <p>def simm5 : Operand<XLenVT>, ImmLeaf&lt;XLenVT, [{ return isInt&lt;5&gt;(Imm); }]&gt;;</p>
-<pre><code>
-3. 它告诉编译器，某个操作数是一个 5 位有符号立即数，编码时要验证这个约束。
-
-4. 生成机器指令（MachineInstr）：
-DAG 经过 ISelDAGToDAG 的匹配和替换后，会转为 MachineInstr，并使用 Operand 信息生成二进制编码。
-
-Scheduling definitions.
-这一部分是干嘛
-Instruction class templates
-比如：
-// strided segment load vd, (rs1), rs2, vm
-成段的load，store。
-以及向量和标量的结合计算啥的
-Combination of instruction classes.
-### RISCVRegisterInfo.td               
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">3. 它告诉编译器，某个操作数是一个 5 位有符号立即数，编码时要验证这个约束。</span><br><span class="line"></span><br><span class="line">4. 生成机器指令（MachineInstr）：</span><br><span class="line">DAG 经过 ISelDAGToDAG 的匹配和替换后，会转为 MachineInstr，并使用 Operand 信息生成二进制编码。</span><br><span class="line"></span><br><span class="line">Scheduling definitions.</span><br><span class="line">这一部分是干嘛</span><br><span class="line">Instruction class templates</span><br><span class="line">比如：</span><br><span class="line">// strided segment load vd, (rs1), rs2, vm</span><br><span class="line">成段的load，store。</span><br><span class="line">以及向量和标量的结合计算啥的</span><br><span class="line">Combination of instruction classes.</span><br><span class="line">这里是一些指令子集啥的，比如VF，F就是两个不同的子集，同时根据不同的predict实例化不同子集</span><br><span class="line">tablegen</span><br></pre></td></tr></table></figure>
+<p>let Predicates &#x3D; [HasVInstructions] in {<br>def VLM_V : VUnitStrideLoadMask&lt;”vlm.v”&gt;,<br>             Sched&lt;[WriteVLDM, ReadVLDX]&gt;;<br>def VSM_V : VUnitStrideStoreMask&lt;”vsm.v”&gt;,<br>             Sched&lt;[WriteVSTM, ReadVSTM, ReadVSTX]&gt;;<br>def : InstAlias&lt;”vle1.v $vd, (${rs1})”,<br>                (VLM_V VR:$vd, GPR:$rs1), 0&gt;;<br>def : InstAlias&lt;”vse1.v $vs3, (${rs1})”,<br>                (VSM_V VR:$vs3, GPR:$rs1), 0&gt;;</p>
+<pre><code>RISCVInstrInfoVPseudos.td
+### RISCVRegisterInfo.td    
+111         
 ### VentusInstrFormatsV.td
 ### RISCVCallingConv.td 
 中断恢复
@@ -178,7 +168,7 @@ RISCVInstrInfoF.td
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sabyic.github.io/2025/05/29/readtarget/" data-id="cmb96ods6000265gw002378ee" data-title="读target目录" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://sabyic.github.io/2025/05/29/readtarget/" data-id="cmb97rft40003jsgw26opcb9z" data-title="读target目录" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
@@ -221,7 +211,7 @@ RISCVInstrInfoF.td
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sabyic.github.io/2025/05/21/2020.5.21/" data-id="cmb96ods2000065gwbkzk51bq" data-title="2025-5-21-为什么官方LLVM会报错的思考" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://sabyic.github.io/2025/05/21/2020.5.21/" data-id="cmb97rft00000jsgw69nf3z5y" data-title="2025-5-21-为什么官方LLVM会报错的思考" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
@@ -266,7 +256,7 @@ RISCVInstrInfoF.td
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sabyic.github.io/2025/05/20/report-fix/" data-id="cmb96ods7000465gw09lzdc6r" data-title="ventus LLVM 初步 调研 report-fix" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://sabyic.github.io/2025/05/20/report-fix/" data-id="cmb97rft50004jsgw3xdqfp1o" data-title="ventus LLVM 初步 调研 report-fix" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
@@ -304,7 +294,7 @@ RISCVInstrInfoF.td
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sabyic.github.io/2025/05/19/first-post/" data-id="cmb96ods5000165gw8oca0g27" data-title="first-post" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://sabyic.github.io/2025/05/19/first-post/" data-id="cmb97rft20001jsgwb8qiav3y" data-title="first-post" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
@@ -375,7 +365,7 @@ RISCVInstrInfoF.td
       
     </div>
     <footer class="article-footer">
-      <a data-url="https://sabyic.github.io/2025/05/19/hello-world/" data-id="cmb96ods7000365gw6zho0y0w" data-title="ventus LLVM 初步 调研" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
+      <a data-url="https://sabyic.github.io/2025/05/19/hello-world/" data-id="cmb97rft30002jsgw1bhvdlwp" data-title="ventus LLVM 初步 调研" class="article-share-link"><span class="fa fa-share">Teilen</span></a>
       
       
       
